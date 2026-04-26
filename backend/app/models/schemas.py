@@ -139,6 +139,7 @@ class HealthResponse(BaseModel):
     version: str = "1.0.0"
 
 
+
 # ─── Database Record Schema ───────────────────────────────────────────────────
 
 class DetectionRecord(BaseModel):
