@@ -1,0 +1,40 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: harvestiq-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"   # allow image uploads
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: harvestiq.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: harvestiq-backend
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: harvestiq-frontend
+                port:
+                  number: 80
+---
+# Kubernetes Secret — never commit real values
+apiVersion: v1
+kind: Secret
+metadata:
+  name: harvestiq-secrets
+  namespace: default
+type: Opaque
+stringData:
+  postgres-password: "harvestiq123"
+  groq-api-key: "your-groq-api-key-here"
