@@ -1,0 +1,37 @@
+﻿# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Env
+.env
+*.env
+
+# Model weights (too large for git — upload to HuggingFace)
+backend/saved_models/*.pt
+backend/saved_models/*.pth
+
+# ChromaDB (generated at runtime)
+backend/chroma_db/
+
+# Dataset (87K images — never commit)
+backend/data/
+
+# Node
+node_modules/
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+logs/
