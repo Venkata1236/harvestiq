@@ -35,3 +35,11 @@ frontend/dist/
 # Logs
 *.log
 logs/
+
+# Kubernetes secrets — never commit real credentials
+k8s/secrets.yml
+k8s/*-secret.yml
+k8s/*secrets*.yml
+
+# But keep the template
+!k8s/ingress.yml
