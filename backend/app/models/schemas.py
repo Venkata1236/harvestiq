@@ -154,3 +154,4 @@ class DetectionRecord(BaseModel):
 
     class Config:
         from_attributes = True  # allows ORM model → Pydantic conversion
+        
