@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: harvestiq_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: harvestiq123
+      POSTGRES_DB: harvestiq
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── FastAPI Backend ─────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: harvestiq_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:harvestiq123@db:5432/harvestiq
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_MODEL: llama3-70b-8192
+      ENV: development
+      LOG_LEVEL: DEBUG
+      MODEL_PATH: saved_models/harvestiq_resnet50.pt
+      CLASS_NAMES_PATH: saved_models/class_names.json
+      CONFIDENCE_THRESHOLD: "0.65"
+      CHROMA_DB_PATH: chroma_db/
+    volumes:
+      - ./backend/saved_models:/app/saved_models  # model persists outside container
+      - ./backend/chroma_db:/app/chroma_db        # chromadb persists outside container
+    depends_on:
+      db:
+        condition: service_healthy  # waits for postgres healthcheck to pass
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── React Frontend ──────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: harvestiq_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"  # nginx serves React build on port 80 inside container
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:8000
+
+volumes:
+  postgres_data:
+    driver: local
