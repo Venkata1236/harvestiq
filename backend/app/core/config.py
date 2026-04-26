@@ -22,10 +22,10 @@ class Settings(BaseSettings):
     # ChromaDB
     CHROMA_DB_PATH: str = "chroma_db/"
 
-    # Derived paths (computed from MODEL_PATH)
     @property
     def model_full_path(self) -> Path:
         return Path(self.MODEL_PATH)
+
 
     @property
     def class_names_full_path(self) -> Path:
@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+
 
 
 settings = Settings()
