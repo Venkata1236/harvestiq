@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: harvestiq-backend
+  namespace: default
+  labels:
+    app: harvestiq-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: harvestiq-backend
+  template:
+    metadata:
+      labels:
+        app: harvestiq-backend
+    spec:
+      containers:
+        - name: backend
+          image: venkata1236/harvestiq-backend:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://postgres:harvestiq123@harvestiq-postgres:5432/harvestiq"
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: harvestiq-secrets
+                  key: groq-api-key
+            - name: GROQ_MODEL
+              value: "llama3-70b-8192"
+            - name: ENV
+              value: "production"
+            - name: MODEL_PATH
+              value: "saved_models/harvestiq_resnet50.pt"
+            - name: CLASS_NAMES_PATH
+              value: "saved_models/class_names.json"
+            - name: CONFIDENCE_THRESHOLD
+              value: "0.65"
+            - name: CHROMA_DB_PATH
+              value: "chroma_db/"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          volumeMounts:
+            - name: model-storage
+              mountPath: /app/saved_models
+            - name: chroma-storage
+              mountPath: /app/chroma_db
+      volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: model-pvc
+        - name: chroma-storage
+          persistentVolumeClaim:
+            claimName: chroma-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: harvestiq-backend
+  namespace: default
+spec:
+  selector:
+    app: harvestiq-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chroma-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
