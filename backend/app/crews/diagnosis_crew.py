@@ -2,7 +2,10 @@
 Diagnosis Crew — orchestrates Disease Analyst + Treatment Advisor agents
 and returns a unified structured result for the API.
 """
-
+import os
+from dotenv import load_dotenv
+load_dotenv()
+os.environ.setdefault("OPENAI_API_KEY", "dummy-not-used")
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from loguru import logger
