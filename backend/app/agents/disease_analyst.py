@@ -1,77 +1,40 @@
-"""
-Disease Analyst Agent — diagnoses crop disease from model prediction + RAG context.
-"""
-
-from crewai import Agent, Task, Crew
+import os
+from dotenv import load_dotenv
+from loguru import logger
+from langchain_groq import ChatGroq
+from langchain_core.messages import HumanMessage
 from app.rag.retriever import get_disease_info
 
+load_dotenv()
+
+llm = ChatGroq(
+    model="llama-3.3-70b-versatile",
+    groq_api_key=os.getenv("GROQ_API_KEY"),
+    temperature=0.3,
+)
 
 def run_disease_analysis(class_name: str, confidence: float) -> str:
-    """
-    Run the Disease Analyst agent to produce a structured diagnosis report.
-
-    Args:
-        class_name: e.g. "Tomato___Early_blight"
-        confidence: model confidence score (0.0 - 1.0)
-    Returns:
-        Markdown-formatted diagnosis report string
-    """
-    # Fetch RAG context first
     disease_info = get_disease_info(class_name)
+    
+    prompt = f"""You are a plant pathologist. Write a crop disease report in markdown.
 
-    # Build context string for the agent
-    rag_context = f"""
-    Disease Name  : {disease_info['disease_name']}
-    Crop          : {disease_info['crop']}
-    Pathogen      : {disease_info['pathogen']}
-    Symptoms      : {disease_info['symptoms']}
-    Causes        : {disease_info['causes']}
-    Severity      : {disease_info['severity']}
-    Is Healthy    : {disease_info['is_healthy']}
-    Model Class   : {class_name}
-    Confidence    : {round(confidence * 100, 1)}%
-    """
+Disease: {disease_info['disease_name']}
+Crop: {disease_info['crop']}
+Severity: {disease_info['severity']}
+Confidence: {round(confidence * 100, 1)}%
+Symptoms: {disease_info['symptoms']}
+Causes: {disease_info['causes']}
+Is Healthy: {disease_info['is_healthy']}
 
-    analyst = Agent(
-        role="Agricultural Disease Analyst",
-        goal="Analyze crop disease diagnosis results and provide clear, accurate disease assessments for farmers.",
-        backstory="""You are a senior plant pathologist with 20 years of experience diagnosing 
-        crop diseases across Asia, Africa and the Americas. You specialize in translating 
-        technical disease data into clear, actionable information that farmers can understand 
-        and act upon immediately. You are precise, empathetic, and always prioritize farmer 
-        safety and crop recovery.""",
-        verbose=False,
-        allow_delegation=False,
-    )
+Write exactly these sections:
+## Diagnosis Summary
+## Immediate Actions
+- (3 bullet points)
+## Warning Signs
+- (2 bullet points)
 
-    task = Task(
-        description=f"""
-        Analyze the following crop disease diagnosis and produce a structured assessment report.
+Max 200 words. Use simple language a farmer understands."""
 
-        RAG Knowledge Base Data:
-        {rag_context}
-
-        Your report must include:
-        1. **Diagnosis Summary** — What disease was detected, which crop, how confident
-        2. **What This Means** — Plain language explanation of the disease impact
-        3. **Severity Assessment** — How serious is this (None / Low / Moderate / High / Critical)
-        4. **Immediate Actions** — What the farmer should do TODAY (3-5 bullet points)
-        5. **Watch For** — Warning signs that the situation is worsening
-
-        If the plant is HEALTHY, focus on maintenance and prevention instead of treatment.
-        Write in clear, simple language a farmer can understand.
-        Format with markdown headers and bullet points.
-        Keep response under 300 words.
-        """,
-        expected_output="A structured markdown disease assessment report with diagnosis summary, severity, immediate actions, and warning signs.",
-        agent=analyst,
-    )
-
-    crew = Crew(
-        agents=[analyst],
-        tasks=[task],
-        verbose=False,
-    )
-
-    result = crew.kickoff()
-    return str(result)
+    response = llm.invoke([HumanMessage(content=prompt)])
+    logger.info(f"Disease analysis complete for: {class_name}")
+    return response.content
