@@ -82,7 +82,7 @@ app.add_middleware(
 
 
 # ─── Routes ───────────────────────────────────────────────────────────────────
-app.include_router(detect_router)
+app.include_router(detect_router, prefix="/api", tags=["Detection"])
 # Day 2: app.include_router(advisory_router)
 
 
