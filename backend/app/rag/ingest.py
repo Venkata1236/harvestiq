@@ -4,7 +4,6 @@ Run once to populate: python -m app.rag.ingest
 """
 
 import chromadb
-from chromadb.utils import embedding_functions
 from loguru import logger
 from pathlib import Path
 
@@ -26,14 +25,13 @@ def get_chroma_client() -> chromadb.PersistentClient:
 
 
 def get_collection(client: chromadb.PersistentClient):
-    """Get or create the crop diseases collection with sentence-transformer embeddings."""
-    embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name=EMBED_MODEL
-    )
+    """Get or create collection using ChromaDB's built-in embedding function."""
+    from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
+    
     return client.get_or_create_collection(
         name=COLLECTION_NAME,
-        embedding_function=embedding_fn,
-        metadata={"hnsw:space": "cosine"},  # cosine similarity for text
+        embedding_function=DefaultEmbeddingFunction(),
+        metadata={"hnsw:space": "cosine"},
     )
 
 
