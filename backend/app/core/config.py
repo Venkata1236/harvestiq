@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str
     GROQ_MODEL: str = "llama3-70b-8192"
 
+    # OpenAI — dummy value, required by CrewAI 0.51.0 internally
+    OPENAI_API_KEY: str = "dummy-not-used"
+
     # Database
     DATABASE_URL: str
 
@@ -26,7 +29,6 @@ class Settings(BaseSettings):
     def model_full_path(self) -> Path:
         return Path(self.MODEL_PATH)
 
-
     @property
     def class_names_full_path(self) -> Path:
         return Path(self.CLASS_NAMES_PATH)
@@ -34,7 +36,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
-
+        extra = "ignore"        # ← allows unknown env vars without crashing
 
 
 settings = Settings()
