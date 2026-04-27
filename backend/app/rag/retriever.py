@@ -4,7 +4,7 @@ for the API response and CrewAI agents.
 """
 
 from loguru import logger
-from app.rag.ingest import get_chroma_client, get_collection, COLLECTION_NAME
+from app.rag.ingest import get_chroma_client, get_collection
 
 
 # ── Main Retriever ─────────────────────────────────────────────────────────────
@@ -21,7 +21,25 @@ def get_disease_info(class_name: str) -> dict:
         client = get_chroma_client()
         collection = get_collection(client)
 
-        # Query by class name
+        # Step 1: Try exact metadata match first
+        try:
+            exact = collection.get(
+                where={"class_name": class_name},
+                include=["documents", "metadatas"],
+            )
+            if exact["documents"]:
+                document = exact["documents"][0]
+                metadata = exact["metadatas"][0]
+                logger.info(f"RAG exact match: {class_name}")
+                parsed = _parse_document(document)
+                parsed["class_name"] = metadata.get("class_name", class_name)
+                parsed["similarity_score"] = 1.0
+                parsed["raw_document"] = document
+                return parsed
+        except Exception:
+            pass
+
+        # Step 2: Fallback to semantic search
         results = collection.query(
             query_texts=[class_name],
             n_results=1,
@@ -36,9 +54,8 @@ def get_disease_info(class_name: str) -> dict:
         metadata = results["metadatas"][0][0]
         similarity = round(1 - results["distances"][0][0], 3)
 
-        logger.info(f"RAG retrieved: {class_name} | similarity: {similarity}")
+        logger.info(f"RAG semantic match: {class_name} | similarity: {similarity}")
 
-        # Parse the document into structured fields
         parsed = _parse_document(document)
         parsed["class_name"] = metadata.get("class_name", class_name)
         parsed["similarity_score"] = similarity
@@ -154,7 +171,7 @@ def _parse_document(document: str) -> dict:
             else:
                 result[current_field] = line
 
-    # Clean up
+    # Clean up whitespace
     for key in result:
         if isinstance(result[key], str):
             result[key] = " ".join(result[key].split())
@@ -165,7 +182,6 @@ def _parse_document(document: str) -> dict:
 # ── Fallback ───────────────────────────────────────────────────────────────────
 def _fallback_response(class_name: str) -> dict:
     """Returns a safe fallback when ChromaDB has no matching document."""
-    # Parse crop name from class_name e.g. "Tomato___Early_blight" → "Tomato"
     parts = class_name.split("___")
     crop = parts[0].replace("_", " ") if parts else "Unknown"
     disease = parts[1].replace("_", " ") if len(parts) > 1 else "Unknown"
