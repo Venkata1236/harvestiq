@@ -546,7 +546,7 @@ DISEASE_KNOWLEDGE = [
         "class_name": "Tomato___Late_blight",
         "document": """
         Disease: Tomato Late Blight
-        Crop: Potato
+        Crop: Tomato
         Pathogen: Phytophthora infestans (oomycete)
         Symptoms: Large irregularly shaped water-soaked greenish-gray lesions.
         White mold on leaf undersides in humid conditions. 
