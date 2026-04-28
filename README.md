@@ -1,4 +1,4 @@
-﻿"""# 🌾 HarvestIQ
+﻿# 🌾 HarvestIQ
 
 > AI-powered crop disease detection — ResNet50 + RAG + FastAPI + React
 
@@ -155,4 +155,3 @@ Live on Hugging Face Spaces (Docker):
 - 📧 bommavaramvenkat2003@gmail.com
 - 💼 [LinkedIn](https://linkedin.com/in/venkatareddy1203)
 - 🐙 [GitHub](https://github.com/venkata1236)
-"""
