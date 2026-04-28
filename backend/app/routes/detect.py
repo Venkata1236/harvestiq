@@ -17,7 +17,7 @@ from app.agents.treatment_advisor import run_treatment_advice
 from app.core.config import settings
 from app.database.connection import get_db
 from app.database.models import Detection
-
+from app.ml.gradcam import generate_gradcam
 router = APIRouter()
 
 
@@ -77,7 +77,13 @@ async def detect_disease(
         logger.error(f"AI agents error: {e}")
         diagnosis_report = "AI analysis temporarily unavailable."
         treatment_plan   = "Please consult your local agricultural extension office."
-
+    # ── GradCAM Heatmap ────────────────────────────────────────────────────
+    gradcam_base64 = generate_gradcam(
+        model=model_manager.model,
+        image_tensor=result["_image_tensor"],
+        class_idx=result["_class_idx"],
+        original_array=result["_original_array"],
+    )
     # ── Save to DB ─────────────────────────────────────────────────────────
     try:
         detection = Detection(
@@ -88,6 +94,7 @@ async def detect_disease(
             severity=result["severity"],
             proceeded_to_advisory=True,
             image_filename=file.filename,
+            gradcam_base64=gradcam_base64,   # ← add this line
         )
         db.add(detection)
         await db.flush()
@@ -112,7 +119,7 @@ async def detect_disease(
         "confidence":        round(result["confidence"] * 100, 1),
         "severity":          result["severity"],
         "top_predictions":   result["top_3_predictions"],
-
+        "heatmap_base64": gradcam_base64,
         # RAG output
         "disease_name":      disease_info["disease_name"],
         "crop":              disease_info["crop"],
