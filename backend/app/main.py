@@ -1,8 +1,10 @@
+import os
 from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from app.core.config import settings
@@ -12,14 +14,11 @@ from app.routes.detect import router as detect_router
 from app.routes.history import router as history_router
 
 # ─── Lifespan ─────────────────────────────────────────────────────────────────
-# Runs ONCE at startup and ONCE at shutdown
-# This is where we load the model and create DB tables
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ── STARTUP ──────────────────────────────────────────────────────────────
+    # ── STARTUP ────────────────────────────────────────────────────────────────
     logger.info("HarvestIQ API starting up...")
 
-    # Create DB tables if they don't exist
     try:
         await create_tables()
         logger.info("Database ready")
@@ -27,7 +26,6 @@ async def lifespan(app: FastAPI):
         logger.error(f"Database connection failed: {e}")
         logger.warning("Continuing without database — detections won't be saved")
 
-    # Load ML model into memory
     try:
         model_manager.load()
         if model_manager.is_loaded:
@@ -48,11 +46,11 @@ async def lifespan(app: FastAPI):
 
     yield  # App runs here
 
-    # ── SHUTDOWN ──────────────────────────────────────────────────────────────
+    # ── SHUTDOWN ───────────────────────────────────────────────────────────────
     logger.info("HarvestIQ API shutting down...")
 
 
-# ─── App Instance ─────────────────────────────────────────────────────────────
+# ─── App Instance ──────────────────────────────────────────────────────────────
 app = FastAPI(
     title="HarvestIQ API",
     description=(
@@ -61,19 +59,19 @@ app = FastAPI(
     ),
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs",        # Swagger UI
-    redoc_url="/redoc",      # ReDoc UI
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 
-# ─── CORS ─────────────────────────────────────────────────────────────────────
-# Allows React frontend (localhost:5173) to call this API
+# ─── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",    # React dev server
-        "http://localhost:3000",    # Alternative React port
-        "https://harvestiq.vercel.app",  # Production frontend
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://harvestiq.vercel.app",
+        "https://venkata1236-harvestiq.hf.space",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -81,30 +79,38 @@ app.add_middleware(
 )
 
 
-# ─── Routes ───────────────────────────────────────────────────────────────────
+# ─── Routes ────────────────────────────────────────────────────────────────────
 app.include_router(detect_router, prefix="/api", tags=["Detection"])
 app.include_router(history_router, prefix="/api", tags=["History"])
 
 
-# ─── Root ─────────────────────────────────────────────────────────────────────
-@app.get("/", tags=["Root"])
-async def root():
+# ─── Root ──────────────────────────────────────────────────────────────────────
+@app.get("/health", tags=["Health"])
+async def health():
+    return {"status": "ok", "version": "1.0.0"}
+
+
+@app.get("/api/health", tags=["Health"])
+async def api_health():
     return {
-        "project": "HarvestIQ",
-        "description": "Crop disease detection and advisory system",
-        "docs": "/docs",
-        "health": "/api/health",
+        "status": "ok",
+        "model_loaded": model_manager.is_loaded,
         "version": "1.0.0"
     }
 
 
+# ─── Serve React Frontend ──────────────────────────────────────────────────────
+# Must be LAST — catches all non-API routes and serves React
+if os.path.exists("frontend/dist"):
+    app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 
-# ─── Entry point ──────────────────────────────────────────────────────────────
+
+# ─── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=7860,
         reload=settings.ENV == "development",
         log_level=settings.LOG_LEVEL.lower()
     )
