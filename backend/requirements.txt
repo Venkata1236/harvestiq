@@ -22,6 +22,8 @@ seaborn==0.13.2
 # AI Agents
 crewai==0.67.1
 groq==0.11.0
+langchain-groq==0.2.3
+langchain==0.2.16
 
 # RAG / Embeddings
 chromadb==0.5.15
