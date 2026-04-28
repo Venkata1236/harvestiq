@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.database.connection import create_tables
 from app.ml.model import model_manager
 from app.routes.detect import router as detect_router
-
+from app.routes.history import router as history_router
 
 # ─── Lifespan ─────────────────────────────────────────────────────────────────
 # Runs ONCE at startup and ONCE at shutdown
@@ -83,7 +83,7 @@ app.add_middleware(
 
 # ─── Routes ───────────────────────────────────────────────────────────────────
 app.include_router(detect_router, prefix="/api", tags=["Detection"])
-# Day 2: app.include_router(advisory_router)
+app.include_router(history_router, prefix="/api", tags=["History"])
 
 
 # ─── Root ─────────────────────────────────────────────────────────────────────
