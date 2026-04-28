@@ -1,20 +1,30 @@
-﻿# HarvestIQ
+﻿---
+title: HarvestIQ
+emoji: 🌿
+colorFrom: green
+colorTo: yellow
+sdk: docker
+pinned: false
+app_port: 7860
+---
 
-Production-grade crop disease detection and advisory system for Indian farmers.
+# HarvestIQ 🌿
 
-Farmer photographs a leaf -> ResNet50 identifies the disease -> CrewAI advisory crew delivers a complete crop rescue plan in 30 seconds.
+**AI-powered crop disease detection and advisory system.**
 
-## Stack
-- CV: ResNet50 (PyTorch) + Grad-CAM explainability
-- Agents: CrewAI 3-agent sequential crew
-- RAG: ChromaDB + sentence-transformers
-- Backend: FastAPI async + PostgreSQL
-- Frontend: React + Vite + TailwindCSS
-- Infra: Docker + K8s Ingress + HuggingFace Spaces
+Upload a leaf photo → get instant disease diagnosis + treatment plan powered by ResNet50 + CrewAI agents.
 
-## Setup
-cp backend/.env.example backend/.env
-docker-compose up --build
+## Features
+- 🔬 ResNet50 deep learning model for disease detection
+- 🤖 CrewAI agents for treatment recommendations
+- 📊 GradCAM heatmap visualization
+- 🗄️ PostgreSQL history tracking
+- 🧠 RAG-powered knowledge base
 
-## Live Demo
-Coming soon
+## Tech Stack
+- **Backend:** FastAPI + Python 3.11
+- **ML Model:** ResNet50 (PyTorch)
+- **Agents:** CrewAI + Groq LLaMA3
+- **Database:** PostgreSQL (Render)
+- **Vector Store:** ChromaDB
+- **Frontend:** React + Vite
