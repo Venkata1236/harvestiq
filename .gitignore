@@ -45,3 +45,6 @@ k8s/*-secret.yml
 
 # But keep the template
 !k8s/ingress.yml
+
+backend/.env
+*.env
